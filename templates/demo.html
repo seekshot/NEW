@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure SaaS Accountant Demo</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+    <header class="hero">
+        <div class="hero-text">
+            <p class="badge">Mock data • No real bank access</p>
+            <h1>{{ headline }}</h1>
+            <p class="subheadline">{{ subheadline }}</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="panel info-panel">
+            <h2>Security + MCP</h2>
+            <ul>
+                <li>Read-only demo: no real credentials.</li>
+                <li>MCP tools orchestrate ingestion, rules, and Notion sync.</li>
+                <li>Designed for read-only aggregators & encrypted storage in real deployments.</li>
+            </ul>
+        </section>
+
+        <section class="grid">
+            <div class="panel stat">
+                <div class="stat-label">Total Spend (sample)</div>
+                <div class="stat-value">{{ '%.2f' % total_spend }} CAD</div>
+            </div>
+            <div class="panel">
+                <h3>Bucket Summary</h3>
+                {% if buckets %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Bucket</th>
+                            <th>Transactions</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bucket in buckets %}
+                        <tr>
+                            <td>{{ bucket.bucket }}</td>
+                            <td>{{ bucket.tx_count }}</td>
+                            <td>{{ '%.2f' % bucket.total }} CAD</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="muted">No bucketed transactions yet. Add rules and re-run classification.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h3>Recent Transactions</h3>
+                <p class="muted">Showing latest 50</p>
+            </div>
+            {% if transactions %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Merchant</th>
+                        <th>Amount</th>
+                        <th>Category</th>
+                        <th>Bucket</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in transactions %}
+                    <tr>
+                        <td>{{ txn.date }}</td>
+                        <td>{{ txn.merchant }}</td>
+                        <td class="amount">{{ '%.2f' % txn.amount }} {{ txn.currency }}</td>
+                        <td>{{ txn.category or 'Uncategorized' }}</td>
+                        <td>{{ txn.bucket or 'Unassigned' }}</td>
+                        <td>{{ txn.source_system }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="muted">No transactions yet. Seed mock data via POST /ingest/mock.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Secure SaaS Accountant • MCP-ready sample • Local-only demo</p>
+    </footer>
+</body>
+</html>
