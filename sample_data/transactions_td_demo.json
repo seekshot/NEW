@@ -1,0 +1,20 @@
+[
+  {
+    "id": "demo_1",
+    "date": "2025-11-01",
+    "amount": -23.45,
+    "currency": "CAD",
+    "merchant": "UBER *TRIP",
+    "raw_category": "Travel",
+    "source_system": "TD_CHEQUING"
+  },
+  {
+    "id": "demo_2",
+    "date": "2025-11-02",
+    "amount": -55.20,
+    "currency": "CAD",
+    "merchant": "WHOLE FOODS",
+    "raw_category": "Groceries",
+    "source_system": "TD_CHEQUING"
+  }
+]
