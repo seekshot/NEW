@@ -3,11 +3,16 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from . import crud
 from .db import Base, engine, get_db
+from .models import Transaction
 from .schemas import (
     AccountCreate,
     AccountRead,
@@ -26,6 +31,9 @@ from .notion_sync import sync_transactions_to_notion
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Secure SaaS Accountant MVP")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 
 @app.post("/accounts", response_model=AccountRead)
@@ -144,6 +152,52 @@ def sync_notion(payload: NotionSyncRequest, db: Session = Depends(get_db)):
         date_to=payload.date_to,
     )
     return sync_transactions_to_notion(txns)
+
+
+@app.get("/demo", response_class=HTMLResponse)
+def demo_page(request: Request, db: Session = Depends(get_db)):
+    """
+    Demo GUI: shows high-level summary and a table of categorized transactions.
+    This uses ONLY mock/sample data and represents a Secure SaaS Accountant MVP.
+    """
+    total_value = db.query(func.sum(Transaction.amount)).scalar() or 0
+    total_spend = float(total_value)
+
+    bucket_rows = (
+        db.query(
+            Transaction.bucket.label("bucket"),
+            func.count(Transaction.id).label("count"),
+            func.sum(Transaction.amount).label("total"),
+        )
+        .filter(Transaction.bucket.isnot(None))
+        .group_by(Transaction.bucket)
+        .order_by(func.sum(Transaction.amount).desc())
+        .all()
+    )
+
+    bucket_summaries = [
+        {"bucket": row.bucket or "Uncategorized", "tx_count": row.count, "total": float(row.total or 0)}
+        for row in bucket_rows
+    ]
+
+    transactions = (
+        db.query(Transaction)
+        .order_by(Transaction.date.desc(), Transaction.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+    return templates.TemplateResponse(
+        "demo.html",
+        {
+            "request": request,
+            "headline": "Secure SaaS Accountant (MCP-ready, Sample Mode)",
+            "subheadline": "Mock TD / PayPal-style transactions • Rules-based categorization • MCP orchestration • No real bank connection.",
+            "total_spend": total_spend,
+            "buckets": bucket_summaries,
+            "transactions": transactions,
+        },
+    )
 
 
 @app.get("/")
